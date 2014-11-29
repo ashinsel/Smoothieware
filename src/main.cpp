@@ -8,6 +8,7 @@
 #include "libs/Kernel.h"
 
 #include "modules/tools/laser/Laser.h"
+#include "modules/tools/servo/Servo.h"
 #include "modules/tools/spindle/Spindle.h"
 #include "modules/tools/extruder/ExtruderMaker.h"
 #include "modules/tools/temperaturecontrol/TemperatureControlPool.h"
@@ -127,7 +128,6 @@ void init() {
     kernel->add_module( new Endstops() );
     kernel->add_module( new Player() );
 
-
     // these modules can be completely disabled in the Makefile by adding to EXCLUDE_MODULES
     #ifndef NO_TOOLS_SWITCH
     SwitchPool *sp= new SwitchPool();
@@ -149,6 +149,9 @@ void init() {
     #ifndef NO_TOOLS_LASER
     kernel->add_module( new Laser() );
     #endif
+	#ifndef NO_TOOLS_SERVO
+    kernel->add_module( new Servo() );
+	#endif
     #ifndef NO_TOOLS_SPINDLE
     kernel->add_module( new Spindle() );
     #endif
