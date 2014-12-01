@@ -24,6 +24,10 @@
 #define servo_module_deactivation_delay_s_checksum	CHECKSUM("servo_module_deactivation_delay_s")
 
 Servo::Servo() {
+	this->deactivation_delay_s = 0;
+	this->deactivation_delay_s_value = 0;
+	this->angle = 0;
+	this->servo_pin = NULL;
 }
 
 void Servo::on_module_loaded() {
