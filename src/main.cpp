@@ -15,6 +15,7 @@
 #include "modules/tools/zprobe/ZProbe.h"
 #include "modules/tools/scaracal/SCARAcal.h"
 #include "modules/tools/switch/SwitchPool.h"
+#include "modules/tools/servo/ServoPool.h"
 #include "modules/tools/temperatureswitch/TemperatureSwitch.h"
 
 #include "modules/robot/Conveyor.h"
@@ -134,6 +135,11 @@ void init() {
     sp->load_tools();
     delete sp;
     #endif
+	#ifndef NO_TOOLS_SERVO
+    ServoPool *servo_pool = new ServoPool();
+    servo_pool->load_tools();
+    delete servo_pool;
+	#endif
     #ifndef NO_TOOLS_EXTRUDER
     // NOTE this must be done first before Temperature control so ToolManager can handle Tn before temperaturecontrol module does
     ExtruderMaker *em= new ExtruderMaker();
