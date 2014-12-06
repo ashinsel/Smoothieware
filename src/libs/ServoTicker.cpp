@@ -10,6 +10,8 @@
 #include "libs/LPC17xx/sLPC17xx.h" // smoothed mbed.h lib
 #include "libs/LPC17xx/LPC17xxLib/inc/lpc17xx_timer.h"
 #include "libs/LPC17xx/LPC17xxLib/inc/lpc17xx_clkpwr.h"
+#include "system_LPC17xx.h" // mbed.h lib
+#include <math.h>
 
 ServoTicker* ServoTicker::global_servo_ticker;
 

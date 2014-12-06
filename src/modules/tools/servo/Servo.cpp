@@ -11,6 +11,7 @@
 #include "libs/Pin.h"
 
 #include "Servo.h"
+#include "ServoPool.h"
 #include "StreamOutputPool.h"
 #include "Config.h"
 #include "checksumm.h"
@@ -18,15 +19,30 @@
 #include "PwmOut.h"
 #include "Gcode.h"
 
+#define servo_checksum								CHECKSUM("servo")
+#define deactivation_delay_ms_checksum				CHECKSUM("deactivation_delay_ms")
+#define extend_angle_checksum						CHECKSUM("extend_angle")
+#define retract_angle_checksum						CHECKSUM("retract_angle")
+#define set_angle_command_checksum					CHECKSUM("set_angle_command")
 #define servo_module_enable_checksum				CHECKSUM("servo_module_enable")
-#define servo_module_pin_checksum					CHECKSUM("servo_module_pin")
+#define output_pin_checksum							CHECKSUM("output_pin")
 #define servo_module_period_checksum				CHECKSUM("servo_module_period")
-#define servo_module_deactivation_delay_s_checksum	CHECKSUM("servo_module_deactivation_delay_s")
 
 Servo::Servo() {
 }
 
+Servo::Servo(uint16_t name)
+{
+	this->name_checksum = name;
+}
+
 void Servo::on_module_loaded() {
+	this->register_for_event(ON_GCODE_RECEIVED);
+	this->register_for_event(ON_GCODE_EXECUTE);
+
+	// Get the settings
+	this->on_config_reload(this);
+
 	if (!THEKERNEL->config->value( servo_module_enable_checksum )->by_default(false)->as_bool() ) {
 		// This module is not loaded, free up it's RAM.
 		delete this;
@@ -35,7 +51,7 @@ void Servo::on_module_loaded() {
 
 	// Get the smoothie-style pin from config
 	Pin* dummy_pin = new Pin();
-	dummy_pin->from_string(THEKERNEL->config->value(servo_module_pin_checksum)->by_default("nc")->as_string())->as_output();
+//	dummy_pin->from_string(THEKERNEL->config->value(servo_module_pin_checksum)->by_default("nc")->as_string())->as_output();
 
 	// Convert the smoothie-style pin into an mbed PwmOut, then free up the
 	// dummy pin's memory.
@@ -58,12 +74,18 @@ void Servo::on_module_loaded() {
 
 	this->register_for_event(ON_GCODE_RECEIVED);
 
-	this->deactivation_delay_s_value =
-			THEKERNEL->config->value(servo_module_deactivation_delay_s_checksum)->by_default(0)->as_int();
+//	this->deactivation_delay_s_value =
+//			THEKERNEL->config->value(servo_module_deactivation_delay_s_checksum)->by_default(0)->as_int();
 	if (this->deactivation_delay_s_value > 0)
 	{
 		this->register_for_event(ON_SECOND_TICK);
 	}
+}
+
+void Servo::on_config_reload(void* argument)
+{
+	this->output_pin.from_string(THEKERNEL->config->value(servo_checksum,  this->name_checksum, output_pin_checksum )->by_default("nc")->as_string())->as_output();
+	this->deactivation_delay_ms = THEKERNEL->config->value(servo_checksum, this->name_checksum, deactivation_delay_ms_checksum )->by_default(0)->as_number();
 }
 
 void Servo::on_gcode_received(void* argument) {
@@ -89,12 +111,12 @@ void Servo::on_gcode_received(void* argument) {
 
 void Servo::on_second_tick(void *)
 {
-    // we are timing out to release the servo
-    if (this->deactivation_delay_s > 0) {
-        if (--this->deactivation_delay_s == 0) {
-            this->servo_pin->write(0);
-        }
-    }
+//    // we are timing out to release the servo
+//    if (this->deactivation_delay_s > 0) {
+//        if (--this->deactivation_delay_s == 0) {
+//            this->servo_pin->write(0);
+//        }
+//    }
 }
 
 void Servo::set_angle(int angle)
@@ -104,7 +126,7 @@ void Servo::set_angle(int angle)
 	this->servo_pin->write(writeVal);
 
 	this->angle = angle;
-	this->deactivation_delay_s = this->deactivation_delay_s_value;
+//	this->deactivation_delay_s = this->deactivation_delay_s_value;
 }
 
 int Servo::get_angle(void)

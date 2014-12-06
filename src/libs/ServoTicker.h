@@ -20,10 +20,11 @@ public:
 	virtual ~ServoTicker();
 
 	void set_period( float period );
+	void TIMER3_IRQHandler (void);
 
 private:
 	uint32_t period;
-	Servo* currentServo;
+//	Servo* currentServo;
 };
 
 #endif /* SRC_LIBS_SERVOTICKER_H_ */
