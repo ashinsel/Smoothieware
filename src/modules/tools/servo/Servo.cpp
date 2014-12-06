@@ -104,8 +104,13 @@ void Servo::on_second_tick(void *)
 void Servo::set_angle(int angle)
 {
 	// TODO: check to see if angle is valid
-	float writeVal = (float)angle/180.0F;
-	this->servo_pin->write(writeVal);
+	if (angle <= 180)
+	{
+		float writeVal = (float)angle/180.0F;
+		this->servo_pin->write(writeVal);
+	}
+	else
+		this->servo_pin->pulsewidth_us(angle);
 
 	this->angle = angle;
 	this->deactivation_delay_s = this->deactivation_delay_s_value;

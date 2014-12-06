@@ -63,7 +63,7 @@ export EXCLUDED_MODULES = tools/touchprobe
 
 include $(BUILD_DIR)/build.mk
 
-CONSOLE?=/dev/arduino
+CONSOLE?=/dev/ttyUSB0
 BAUD?=1000000
 
 .PHONY: debug-store flash upload debug console dfu
