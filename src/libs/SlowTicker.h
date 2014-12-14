@@ -34,11 +34,12 @@ class SlowTicker : public Module{
         void tick();
         // For some reason this can't go in the .cpp, see :  http://mbed.org/forum/mbed/topic/2774/?page=1#comment-14221
         // TODO replace this with std::function()
-        template<typename T> Hook* attach( uint32_t frequency, T *optr, uint32_t ( T::*fptr )( uint32_t ) ){
+        template<typename T> Hook* attach( uint32_t frequency, T *optr, uint32_t ( T::*fptr )( uint32_t ), bool isOneShot = false ){
             Hook* hook = new Hook();
             hook->interval = int(floor((SystemCoreClock/4)/frequency));
             hook->attach(optr, fptr);
             hook->countdown = hook->interval;
+            hook->isOneShot = isOneShot;
 
             // to avoid race conditions we must stop the interupts before updating this non thread safe vector
             __disable_irq();
@@ -51,8 +52,11 @@ class SlowTicker : public Module{
             return hook;
         }
 
+
+
     private:
         bool flag_1s();
+        void detach(Hook *hook);
 
         vector<Hook*> hooks;
         uint32_t max_frequency;

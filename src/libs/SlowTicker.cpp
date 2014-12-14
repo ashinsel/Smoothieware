@@ -15,6 +15,7 @@ using namespace std;
 #include "modules/robot/Conveyor.h"
 #include "Pauser.h"
 #include "Gcode.h"
+#include "StreamOutputPool.h"
 
 #include <mri.h>
 
@@ -61,10 +62,45 @@ void SlowTicker::set_frequency( int frequency ){
     flag_1s_count= SystemCoreClock>>2;
 }
 
+void SlowTicker::detach(Hook *hook)
+{
+	//this->hooks.iterator
+	std::vector<Hook*>::iterator current = this->hooks.begin();
+	while ( current != hooks.end() ) {
+	    if ( *current == hook ) {
+	    	THEKERNEL->streams->printf("Ready to delete hook\n.");
+	        current = hooks.erase( current ) ;
+	    } else {
+	        ++ current;
+	    }
+	}
+	delete hook;
+}
+
 // The actual interrupt being called by the timer, this is where work is done
 void SlowTicker::tick(){
 
     // Call all hooks that need to be called ( bresenham )
+	vector<Hook*>::iterator it;
+//	THEKERNEL->streams->printf("%d Hooks\n", this->hooks.size());
+	for ( it = this->hooks.begin(); it != this->hooks.end(); ) {
+		Hook* hook = (*it);
+		hook->countdown -= this->interval;
+		if (hook->countdown < 0)
+		{
+			hook->countdown += hook->interval;
+			hook->call();
+			if (hook->isOneShot) {
+				THEKERNEL->streams->printf("DELETING HOOK\n");
+				delete *it;
+				it = hooks.erase(it);
+				THEKERNEL->streams->printf("DELETED HOOK\n");
+			} else {
+				++it;
+			}
+		}
+	}
+	/*
     for (uint32_t i=0; i<this->hooks.size(); i++){
         Hook* hook = this->hooks.at(i);
         hook->countdown -= this->interval;
@@ -72,9 +108,15 @@ void SlowTicker::tick(){
         {
             hook->countdown += hook->interval;
             hook->call();
+            if (hook->isOneShot)
+            {
+            	detach(hook);
+            	// Decrement i, we just removed an item, so the size got smaller.
+            	i--;
+            }
         }
     }
-
+*/
     // deduct tick time from secound counter
     flag_1s_count -= this->interval;
     // if a whole second has elapsed,
