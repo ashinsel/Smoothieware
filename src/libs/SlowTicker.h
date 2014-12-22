@@ -17,6 +17,8 @@ using namespace std;
 
 #include "libs/Hook.h"
 #include "libs/Pin.h"
+#include "libs/Kernel.h"
+#include "StreamOutputPool.h"
 
 #include "system_LPC17xx.h" // for SystemCoreClock
 #include <math.h>
@@ -34,7 +36,7 @@ class SlowTicker : public Module{
         void tick();
         // For some reason this can't go in the .cpp, see :  http://mbed.org/forum/mbed/topic/2774/?page=1#comment-14221
         // TODO replace this with std::function()
-        template<typename T> Hook* attach( uint32_t frequency, T *optr, uint32_t ( T::*fptr )( uint32_t ), bool isOneShot = false ){
+        template<typename T> Hook* attach( float frequency, T *optr, uint32_t ( T::*fptr )( uint32_t ), bool isOneShot = false ){
             Hook* hook = new Hook();
             hook->interval = int(floor((SystemCoreClock/4)/frequency));
             hook->attach(optr, fptr);

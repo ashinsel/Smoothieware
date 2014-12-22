@@ -24,6 +24,7 @@ class Servo: public Module {
 		void on_config_reload(void* argument);
 		void on_gcode_received(void* argument);
 		void on_gcode_execute(void* argument);
+		void on_main_loop(void* argument);
 		uint32_t deactivate(uint32_t);
 
 	private:
@@ -41,6 +42,7 @@ class Servo: public Module {
 		uint16_t angle;
 		uint16_t min_angle;
 		uint16_t max_angle;
+		uint32_t on_timestamp;
 };
 
 #endif /* SRC_MODULES_TOOLS_SERVO_SERVO_H_ */

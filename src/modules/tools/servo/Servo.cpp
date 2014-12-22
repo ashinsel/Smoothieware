@@ -9,6 +9,7 @@
 #include "libs/Module.h"
 
 #include "modules/robot/Conveyor.h"
+#include "system_LPC17xx.h"
 
 #include "Servo.h"
 #include "StreamOutputPool.h"
@@ -50,6 +51,7 @@ void Servo::on_module_loaded(void)
 {
 	this->register_for_event(ON_GCODE_RECEIVED);
 	this->register_for_event(ON_GCODE_EXECUTE);
+	this->register_for_event(ON_MAIN_LOOP);
 
 	// Load the settings from the Config Source.
 	this->on_config_reload(this);
@@ -69,7 +71,7 @@ void Servo::on_config_reload(void* argument)
 		delete this;
 		return;
 	} else {
-		THEKERNEL->streams->printf("SERVO %04X: Connected P%d.%02d to Servo %04X\n", this->name_checksum, this->output_pin.port_number, this->output_pin.pin);
+		THEKERNEL->streams->printf("SERVO %04X: Connected P%d.%02d to Servo.\n", this->name_checksum, this->output_pin.port_number, this->output_pin.pin);
 		this->pwm_pin->period_us(20000);
 		this->pwm_pin->write(0);
 	}
@@ -90,6 +92,15 @@ void Servo::on_config_reload(void* argument)
 	THEKERNEL->streams->printf("SERVO %04X: Set Angle Command: %s\n", this->name_checksum, this->set_angle_command.c_str());
 
 	this->deactivation_delay_ms = THEKERNEL->config->value(servo_checksum, this->name_checksum, deactivation_delay_ms_checksum)->by_default(0)->as_int();
+//	if (this->deactivation_delay_ms > 0)
+//	{
+//		// See if the systick timer has already been set up
+//		if (SysTick->LOAD == 0)
+//		{
+//			// Set up the system tick to be at 1ms.
+//		    SysTick_Config((SystemCoreClock / 1000) - 1, true);
+//		}
+//	}
 	THEKERNEL->streams->printf("SERVO %04X: Deactivation delay is %dms.\n", this->name_checksum, this->deactivation_delay_ms);
 
 	this->min_angle = THEKERNEL->config->value(servo_checksum, this->name_checksum, min_angle_checksum)->by_default(80)->as_int();
@@ -156,6 +167,18 @@ void Servo::on_gcode_execute(void* argument)
 	}
 }
 
+void Servo::on_main_loop(void* argument)
+{
+//	if (this->isActive && this->deactivation_delay_ms > 0)
+//	{
+//		// Convert the deactivation delay into ticks.
+//		uint32_t deactivation_ticks = SystemCoreClock / 1000 * deactivation_delay_ms;
+//		// Calculate the turn off time
+//		uint32_t off_time = this->on_timestamp + deactivation_ticks;
+//		uint32_t now_timestamp = SysTick->LOAD - SysTick->VAL;
+//	}
+}
+
 float scale(float val, float oldmin, float oldmax, float newmin, float newmax)
 {
 	float oldrange = oldmax - oldmin;
@@ -187,7 +210,12 @@ void Servo::set_angle(uint16_t angle)
 
 		if (this->deactivation_delay_ms > 0)
 		{
-			THEKERNEL->slow_ticker->attach(1000 / this->deactivation_delay_ms, this, &Servo::deactivate, true);
+//			this->on_timestamp = SysTick->LOAD - SysTick->VAL;
+
+//			uint32_t frequency = (1000 / this->deactivation_delay_ms);
+//            THEKERNEL->streams->printf("Frequency:%d, Interval:%d\n", frequency, int(floor((SystemCoreClock/4)/frequency)));
+			THEKERNEL->streams->printf("Attaching timer at frequency %.1fHz\n", 1000.0 / this->deactivation_delay_ms);
+			THEKERNEL->slow_ticker->attach(1000.0 / this->deactivation_delay_ms, this, &Servo::deactivate, true);
 		}
 	}
 }

@@ -7,6 +7,7 @@
 
 using namespace std;
 #include <vector>
+#include <algorithm>
 #include "libs/nuts_bolts.h"
 #include "libs/Module.h"
 #include "libs/Kernel.h"
@@ -81,25 +82,25 @@ void SlowTicker::detach(Hook *hook)
 void SlowTicker::tick(){
 
     // Call all hooks that need to be called ( bresenham )
-	vector<Hook*>::iterator it;
+//	vector<Hook*>::iterator it;
 //	THEKERNEL->streams->printf("%d Hooks\n", this->hooks.size());
-	for ( it = this->hooks.begin(); it != this->hooks.end(); ) {
-		Hook* hook = (*it);
-		hook->countdown -= this->interval;
-		if (hook->countdown < 0)
-		{
-			hook->countdown += hook->interval;
-			hook->call();
-			if (hook->isOneShot) {
-				THEKERNEL->streams->printf("DELETING HOOK\n");
-				delete *it;
-				it = hooks.erase(it);
-				THEKERNEL->streams->printf("DELETED HOOK\n");
-			} else {
-				++it;
-			}
-		}
-	}
+//	for ( it = this->hooks.begin(); it != this->hooks.end(); ) {
+//		Hook* hook = (*it);
+//		hook->countdown -= this->interval;
+//		if (hook->countdown < 0)
+//		{
+//			hook->countdown += hook->interval;
+//			hook->call();
+////			if (hook->isOneShot) {
+////				THEKERNEL->streams->printf("DELETING HOOK\n");
+////				delete *it;
+////				it = hooks.erase(it);
+////				THEKERNEL->streams->printf("DELETED HOOK\n");
+////			} else {
+//				++it;
+////			}
+//		}
+//	}
 	/*
     for (uint32_t i=0; i<this->hooks.size(); i++){
         Hook* hook = this->hooks.at(i);
@@ -117,6 +118,27 @@ void SlowTicker::tick(){
         }
     }
 */
+	hooks.erase(
+		std::remove_if(
+			hooks.begin(),
+			hooks.end(),
+			[&](Hook* hook) -> bool {
+				hook->countdown -= this->interval;
+				if (hook->countdown < 0) {
+					hook->countdown += hook->interval;
+					hook->call();
+					if (hook->isOneShot) {
+						THEKERNEL->streams->printf("Timer: One Shot.\n");
+						return true;
+					}
+				}
+				return false;
+			}
+		),
+		hooks.end()
+	);
+
+
     // deduct tick time from secound counter
     flag_1s_count -= this->interval;
     // if a whole second has elapsed,
