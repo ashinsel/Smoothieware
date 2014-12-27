@@ -12,6 +12,7 @@
 #include "libs/Pin.h"
 
 #include <bitset>
+#include <string>
 
 class StepperMotor;
 
@@ -41,6 +42,12 @@ class Endstops : public Module{
         uint8_t homing_order;
         std::bitset<3> home_direction;
         std::bitset<3> limit_enable;
+
+        bool safe_homing_enabled;
+        float safe_homing_min_x;
+        float safe_homing_min_y;
+        std::string safe_homing_pre_home_command;
+        std::string safe_homing_post_home_command;
 
         unsigned int  debounce_count;
         float  retract_mm[3];
