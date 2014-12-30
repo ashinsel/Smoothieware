@@ -23,6 +23,7 @@ class ConfigValue{
         int as_int();
         bool as_bool();
         string as_string();
+        string as_gcode();
 
         ConfigValue* by_default(float val);
         ConfigValue* by_default(string val);

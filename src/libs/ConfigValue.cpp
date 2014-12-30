@@ -11,6 +11,8 @@
 
 #include <vector>
 #include <stdio.h>
+#include <string>
+#include <algorithm>
 
 ConfigValue::ConfigValue()
 {
@@ -98,6 +100,13 @@ int ConfigValue::as_int()
 std::string ConfigValue::as_string()
 {
     return this->value;
+}
+
+std::string ConfigValue::as_gcode()
+{
+	std::string result = this->value;
+	std::replace(result.begin(), result.end(), '_', ' ');
+	return result;
 }
 
 bool ConfigValue::as_bool()

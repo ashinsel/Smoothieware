@@ -59,6 +59,10 @@ private:
         bool is_delta:1;
     };
 
+    bool zprobe_retractable;
+    std::string zprobe_extend_command;
+    std::string zprobe_retract_command;
+
     Pin pin;
     uint8_t debounce_count;
     std::vector<LevelingStrategy*> strategies;

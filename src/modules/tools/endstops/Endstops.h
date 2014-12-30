@@ -46,6 +46,7 @@ class Endstops : public Module{
         bool safe_homing_enabled;
         float safe_homing_min_x;
         float safe_homing_min_y;
+        float safe_homing_min_z;
         std::string safe_homing_pre_home_command;
         std::string safe_homing_post_home_command;
 

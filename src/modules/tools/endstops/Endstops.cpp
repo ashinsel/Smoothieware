@@ -105,6 +105,7 @@
 #define gamma_safe_homing_enable_checksum	CHECKSUM("gamma_safe_homing_enable")
 #define gamma_safe_homing_min_x_checksum CHECKSUM("gamma_safe_homing_min_x")
 #define gamma_safe_homing_min_y_checksum CHECKSUM("gamma_safe_homing_min_y")
+#define gamma_safe_homing_min_z_checksum CHECKSUM("gamma_safe_homing_min_z")
 #define safe_homing_pre_home_command_checksum	CHECKSUM("safe_homing_pre_home_command")
 #define safe_homing_post_home_command_checksum	CHECKSUM("safe_homing_posthome_command")
 
@@ -238,11 +239,8 @@ void Endstops::on_config_reload(void *argument)
     this->safe_homing_enabled = THEKERNEL->config->value(gamma_safe_homing_enable_checksum)->by_default(false)->as_bool();
     this->safe_homing_min_x = THEKERNEL->config->value(gamma_safe_homing_min_x_checksum)->by_default(0)->as_number();
     this->safe_homing_min_y = THEKERNEL->config->value(gamma_safe_homing_min_y_checksum)->by_default(0)->as_number();
-    this->safe_homing_pre_home_command = THEKERNEL->config->value(safe_homing_pre_home_command_checksum)->by_default("")->as_string();
-    this->safe_homing_post_home_command = THEKERNEL->config->value(safe_homing_post_home_command_checksum)->by_default("")->as_string();
-
-    this->safe_homing_pre_home_command = "M280 S70";
-    this->safe_homing_post_home_command = "M280 S150";
+    this->safe_homing_pre_home_command = THEKERNEL->config->value(safe_homing_pre_home_command_checksum)->by_default("")->as_gcode();
+    this->safe_homing_post_home_command = THEKERNEL->config->value(safe_homing_post_home_command_checksum)->by_default("")->as_gcode();
 }
 
 static const char *endstop_names[]= {"min_x", "min_y", "min_z", "max_x", "max_y", "max_z"};
@@ -380,12 +378,11 @@ void Endstops::do_homing_cartesian(char axes_to_move)
 		if ((axes_to_move >> Z_AXIS) & 1 ) {
 
 			float pos[3]; THEKERNEL->robot->get_axis_position(pos);
-			if(pos[0] < this->safe_homing_min_x || pos[1] < this->safe_homing_min_y) {
-				THEKERNEL->streams->printf("Attempting to home Z outside of safe area, moving to (%.1f,%.1f)\r\n", this->safe_homing_min_x, this->safe_homing_min_y);
+			if(pos[0] < this->safe_homing_min_x || pos[1] < this->safe_homing_min_y || pos[2] < this->safe_homing_min_z) {
+				THEKERNEL->streams->printf("Attempting to home Z outside of safe area, moving to (%.1f,%.1f,%.1f)\r\n", this->safe_homing_min_x, this->safe_homing_min_y, this->safe_homing_min_z);
 
 				// Move to safe zone using regular absolute move.
 				char buf[32];
-				// Move to center using a regular move, use slower of X and Y fast rate
 				float rate= min(this->fast_rates[0], this->fast_rates[1])*60.0F;
 				snprintf(buf, sizeof(buf), "G0 X%1.4f Y%1.4f F%1.4f", this->safe_homing_min_x, this->safe_homing_min_y, rate);
 				Gcode gc(buf, &(StreamOutput::NullStream));
@@ -399,14 +396,8 @@ void Endstops::do_homing_cartesian(char axes_to_move)
 				THEKERNEL->streams->printf("Now it's safe to home Z\r\n");
 			}
 
-			char buf[32];
-	        snprintf(buf, sizeof(buf), "M280 S70");
-	    	THEKERNEL->streams->printf("Homed, executing %s\r\n", buf);
-			Gcode gc(buf, &(StreamOutput::NullStream));
-	//		Gcode gc("M280 S150", &(StreamOutput::NullStream));
-//			THEKERNEL->
-//			THEKERNEL->conveyor->append_gcode(&gc);
-//			THEKERNEL->conveyor->wait_for_empty_queue();
+	    	THEKERNEL->streams->printf("Homed, executing %s\r\n", this->safe_homing_pre_home_command.c_str());
+			Gcode gc(this->safe_homing_pre_home_command, &(StreamOutput::NullStream));
 			THEKERNEL->call_event(ON_GCODE_EXECUTE, &gc);
 			THEKERNEL->streams->printf("Executed pre-home command, now homing\r\n");
 		}
@@ -490,11 +481,8 @@ void Endstops::do_homing_cartesian(char axes_to_move)
 
     if (this->safe_homing_enabled) {
 		if ((axes_to_move >> Z_AXIS) & 1 ) {
-			char buf[32];
-			snprintf(buf, sizeof(buf), "M280 S150");
-			THEKERNEL->streams->printf("Homed, executing %s\r\n", buf);
-			Gcode gc(buf, &(StreamOutput::NullStream));
-	//		Gcode gc("M280 S150", &(StreamOutput::NullStream));
+			THEKERNEL->streams->printf("Homed, executing %s\r\n", this->safe_homing_post_home_command.c_str());
+			Gcode gc(this->safe_homing_post_home_command, &(StreamOutput::NullStream));
 			THEKERNEL->call_event(ON_GCODE_EXECUTE, &gc);
 			THEKERNEL->streams->printf("Executed post-home command, done homing\r\n");
 		}

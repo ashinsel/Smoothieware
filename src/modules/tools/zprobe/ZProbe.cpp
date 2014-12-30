@@ -37,6 +37,9 @@
 #define fast_feedrate_checksum   CHECKSUM("fast_feedrate")
 #define probe_height_checksum    CHECKSUM("probe_height")
 #define gamma_max_checksum       CHECKSUM("gamma_max")
+#define extend_command_checksum    CHECKSUM("extend_command")
+#define retract_command_checksum    CHECKSUM("retract_command")
+#define retractable_checksum CHECKSUM("retractable")
 
 // from endstop section
 #define delta_homing_checksum    CHECKSUM("delta_homing")
@@ -119,6 +122,10 @@ void ZProbe::on_config_reload(void *argument)
     this->slow_feedrate = THEKERNEL->config->value(zprobe_checksum, slow_feedrate_checksum)->by_default(5)->as_number(); // feedrate in mm/sec
     this->fast_feedrate = THEKERNEL->config->value(zprobe_checksum, fast_feedrate_checksum)->by_default(100)->as_number(); // feedrate in mm/sec
     this->max_z         = THEKERNEL->config->value(gamma_max_checksum)->by_default(500)->as_number(); // maximum zprobe distance
+
+    this->zprobe_retractable = THEKERNEL->config->value(zprobe_checksum, retractable_checksum)->by_default(false)->as_bool();
+    this->zprobe_extend_command = THEKERNEL->config->value(zprobe_checksum, extend_command_checksum)->by_default("")->as_gcode();
+    this->zprobe_retract_command = THEKERNEL->config->value(zprobe_checksum, retract_command_checksum)->by_default("")->as_gcode();
 }
 
 bool ZProbe::wait_for_probe(int& steps)
@@ -162,6 +169,12 @@ bool ZProbe::wait_for_probe(int& steps)
 // single probe and report amount moved
 bool ZProbe::run_probe(int& steps, bool fast)
 {
+	if (this->zprobe_retractable) {
+		// Extend the probe
+		Gcode gc_extend(this->zprobe_extend_command, &(StreamOutput::NullStream));
+		THEKERNEL->call_event(ON_GCODE_EXECUTE, &gc_extend);
+	}
+
     // Enable the motors
     THEKERNEL->stepper->turn_enable_pins_on();
     this->current_feedrate = (fast ? this->fast_feedrate : this->slow_feedrate) * Z_STEPS_PER_MM; // steps/sec
@@ -183,6 +196,12 @@ bool ZProbe::run_probe(int& steps, bool fast)
 
     bool r = wait_for_probe(steps);
     this->running = false;
+
+    if (this->zprobe_retractable) {
+		// Retract the probe
+		Gcode gc_retract(this->zprobe_retract_command, &(StreamOutput::NullStream));
+		THEKERNEL->call_event(ON_GCODE_EXECUTE, &gc_retract);
+    }
     return r;
 }
 
