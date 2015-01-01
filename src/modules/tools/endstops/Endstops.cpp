@@ -107,7 +107,7 @@
 #define gamma_safe_homing_min_y_checksum CHECKSUM("gamma_safe_homing_min_y")
 #define gamma_safe_homing_min_z_checksum CHECKSUM("gamma_safe_homing_min_z")
 #define safe_homing_pre_home_command_checksum	CHECKSUM("safe_homing_pre_home_command")
-#define safe_homing_post_home_command_checksum	CHECKSUM("safe_homing_posthome_command")
+#define safe_homing_post_home_command_checksum	CHECKSUM("safe_homing_post_home_command")
 
 #define STEPPER THEKERNEL->robot->actuators
 #define STEPS_PER_MM(a) (STEPPER[a]->get_steps_per_mm())

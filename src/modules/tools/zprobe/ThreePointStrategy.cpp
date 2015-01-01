@@ -77,6 +77,7 @@
 #define home_checksum                CHECKSUM("home_first")
 #define tolerance_checksum           CHECKSUM("tolerance")
 #define save_plane_checksum          CHECKSUM("save_plane")
+#define feedrate_checksum    		 CHECKSUM("feedrate")
 
 ThreePointStrategy::ThreePointStrategy(ZProbe *zprobe) : LevelingStrategy(zprobe)
 {
@@ -108,6 +109,8 @@ bool ThreePointStrategy::handleConfig()
     this->home= THEKERNEL->config->value(leveling_strategy_checksum, three_point_leveling_strategy_checksum, home_checksum)->by_default(true)->as_bool();
     this->tolerance= THEKERNEL->config->value(leveling_strategy_checksum, three_point_leveling_strategy_checksum, tolerance_checksum)->by_default(0.03F)->as_number();
     this->save= THEKERNEL->config->value(leveling_strategy_checksum, three_point_leveling_strategy_checksum, save_plane_checksum)->by_default(false)->as_bool();
+
+    this->feedrate = THEKERNEL->config->value(leveling_strategy_checksum, three_point_leveling_strategy_checksum, feedrate_checksum)->by_default(600)->as_number();
     return true;
 }
 
@@ -256,7 +259,7 @@ bool ThreePointStrategy::doProbing(StreamOutput *stream)
     // offset by the probe XY offset
     x -= std::get<X_AXIS>(this->probe_offsets);
     y -= std::get<Y_AXIS>(this->probe_offsets);
-    zprobe->coordinated_move(x, y, NAN, zprobe->getFastFeedrate());
+    zprobe->coordinated_move(x, y, NAN, this->feedrate);
 
     // for now we use probe to find bed and not the Z min endstop
     // the first probe point becomes Z == 0 effectively so if we home Z or manually set z after this, it needs to be at the first probe point
@@ -271,14 +274,14 @@ bool ThreePointStrategy::doProbing(StreamOutput *stream)
     THEKERNEL->robot->reset_axis_position(std::get<Z_AXIS>(this->probe_offsets), Z_AXIS);
 
     // move up to specified probe start position
-    zprobe->coordinated_move(NAN, NAN, zprobe->getProbeHeight(), zprobe->getSlowFeedrate()); // move to probe start position
+    zprobe->coordinated_move(NAN, NAN, zprobe->getProbeHeight(), zprobe->getFastFeedrate()); // move to probe start position
 
     // probe the three points
     Vector3 v[3];
     for (int i = 0; i < 3; ++i) {
         std::tie(x, y) = probe_points[i];
         // offset moves by the probe XY offset
-        float z = zprobe->probeDistance(x-std::get<X_AXIS>(this->probe_offsets), y-std::get<Y_AXIS>(this->probe_offsets));
+        float z = zprobe->probeDistance(x-std::get<X_AXIS>(this->probe_offsets), y-std::get<Y_AXIS>(this->probe_offsets), this->feedrate);
         if(isnan(z)) return false; // probe failed
         z= zprobe->getProbeHeight() - z; // relative distance between the probe points, lower is negative z
         stream->printf("DEBUG: P%d:%1.4f\n", i, z);

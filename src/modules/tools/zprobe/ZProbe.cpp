@@ -37,9 +37,9 @@
 #define fast_feedrate_checksum   CHECKSUM("fast_feedrate")
 #define probe_height_checksum    CHECKSUM("probe_height")
 #define gamma_max_checksum       CHECKSUM("gamma_max")
-#define extend_command_checksum    CHECKSUM("extend_command")
-#define retract_command_checksum    CHECKSUM("retract_command")
-#define retractable_checksum CHECKSUM("retractable")
+#define extend_command_checksum  CHECKSUM("extend_command")
+#define retract_command_checksum CHECKSUM("retract_command")
+#define retractable_checksum     CHECKSUM("retractable")
 
 // from endstop section
 #define delta_homing_checksum    CHECKSUM("delta_homing")
@@ -175,6 +175,13 @@ bool ZProbe::run_probe(int& steps, bool fast)
 		THEKERNEL->call_event(ON_GCODE_EXECUTE, &gc_extend);
 	}
 
+	// Move up to the minimum z probe height, if below.
+	float pos[3]; THEKERNEL->robot->get_axis_position(pos);
+	if (pos[Z_AXIS] < this->probe_height)
+	{
+		coordinated_move(NAN, NAN, this->probe_height, this->fast_feedrate);
+	}
+
     // Enable the motors
     THEKERNEL->stepper->turn_enable_pins_on();
     this->current_feedrate = (fast ? this->fast_feedrate : this->slow_feedrate) * Z_STEPS_PER_MM; // steps/sec
@@ -234,11 +241,11 @@ bool ZProbe::return_probe(int steps)
     return true;
 }
 
-bool ZProbe::doProbeAt(int &steps, float x, float y)
+bool ZProbe::doProbeAt(int &steps, float x, float y, float feedrate)
 {
     int s;
     // move to xy
-    coordinated_move(x, y, NAN, getFastFeedrate());
+    coordinated_move(x, y, NAN, feedrate == NAN ? getFastFeedrate() : feedrate);
     if(!run_probe(s)) return false;
 
     // return to original Z
@@ -248,10 +255,10 @@ bool ZProbe::doProbeAt(int &steps, float x, float y)
     return true;
 }
 
-float ZProbe::probeDistance(float x, float y)
+float ZProbe::probeDistance(float x, float y, float feedrate)
 {
     int s;
-    if(!doProbeAt(s, x, y)) return NAN;
+    if(!doProbeAt(s, x, y, feedrate)) return NAN;
     return zsteps_to_mm(s);
 }
 
