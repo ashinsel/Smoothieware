@@ -6,8 +6,7 @@
 */
 
 
-#ifndef PLAYER_H
-#define PLAYER_H
+#pragma once
 
 #include "Module.h"
 
@@ -27,10 +26,10 @@ class Player : public Module {
         void on_console_line_received( void* argument );
         void on_main_loop( void* argument );
         void on_second_tick(void* argument);
-        void on_halt(void* argument);
         void on_get_public_data(void* argument);
         void on_set_public_data(void* argument);
         void on_gcode_received(void *argument);
+        void on_halt(void *argument);
 
     private:
         void play_command( string parameters, StreamOutput* stream );
@@ -47,25 +46,21 @@ class Player : public Module {
         string on_boot_gcode;
         StreamOutput* current_stream;
         StreamOutput* reply_stream;
-        StreamOutput* suspend_stream;
 
         FILE* current_file_handler;
-        unsigned long file_size, played_cnt;
+        long file_size;
+        unsigned long played_cnt;
         unsigned long elapsed_secs;
-        float saved_position[3];
-        float saved_feed_rate;
+        float saved_position[3]; // only saves XYZ
         std::map<uint16_t, float> saved_temperatures;
         struct {
             bool on_boot_gcode_enable:1;
             bool booted:1;
             bool playing_file:1;
-            bool halted:1;
             bool suspended:1;
-            bool saved_inch_mode:1;
-            bool saved_absolute_mode:1;
             bool was_playing_file:1;
+            bool leave_heaters_on:1;
+            bool override_leave_heaters_on:1;
             uint8_t suspend_loops:4;
         };
 };
-
-#endif // PLAYER_H

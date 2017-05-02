@@ -14,14 +14,12 @@
 #include "Gcode.h"
 #include "LcdBase.h"
 #include "libs/StreamOutput.h"
-
-#include <string>
-#include <vector>
+#include "Robot.h"
 
 using namespace std;
 
 // static as it is shared by all screens
-std::vector<std::string> PanelScreen::command_queue;
+std::deque<std::string> PanelScreen::command_queue;
 
 PanelScreen::PanelScreen() {}
 PanelScreen::~PanelScreen() {}
@@ -87,15 +85,27 @@ void PanelScreen::send_command(const char *gcstr)
     }
 }
 
+void PanelScreen::get_current_pos(float *cp)
+{
+    Robot::wcs_t mpos= THEROBOT->get_axis_position();
+    Robot::wcs_t pos= THEROBOT->mcs2wcs(mpos);
+    cp[0]= THEROBOT->from_millimeters(std::get<X_AXIS>(pos));
+    cp[1]= THEROBOT->from_millimeters(std::get<Y_AXIS>(pos));
+    cp[2]= THEROBOT->from_millimeters(std::get<Z_AXIS>(pos));
+}
+
 void PanelScreen::on_main_loop()
 {
     // for each command in queue send it
-    for (auto& cmd : command_queue) {
+    while(command_queue.size() > 0) {
         struct SerialMessage message;
-        message.message = cmd;
+        message.message = command_queue.front();
+        command_queue.pop_front();
         message.stream = &(StreamOutput::NullStream);
         THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message );
-        cmd.clear();
+        if(THEKERNEL->is_halted()) {
+            command_queue.clear();
+            break;
+        }
     }
-    command_queue.clear();
 }

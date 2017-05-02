@@ -9,7 +9,7 @@
 #define PANELSCREEN_H
 
 #include <string>
-#include <vector>
+#include <deque>
 
 class Panel;
 
@@ -34,10 +34,11 @@ public:
 
     friend class Panel;
 protected:
+    void get_current_pos(float *p);
     void send_gcode(std::string g);
     void send_gcode(const char *gm_code, char parameter, float value);
     void send_command(const char *gcstr);
-    static std::vector<std::string> command_queue;
+    static std::deque<std::string> command_queue;
     PanelScreen *parent;
 };
 
